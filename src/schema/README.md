@@ -1,10 +1,24 @@
 # schema
 
-Zod schemas and the deterministic validation layer.
+Zod schemas, the raw model JSON contract, and (Phase 08) the validation layer.
 
-- `invoice.ts` — the `InvoiceV1` schema with per-field confidence wrappers.
-- `json-types.ts` — the raw model JSON contract plus the mapper to `InvoiceV1`.
-- `rules/` — pure-TypeScript, zero-ML validation rules. This layer is the trust
-  boundary: it gates every extraction result and never silently fixes values.
+## Modules
 
-_Populated in Phases 07–08._
+- `invoice.ts` — `InvoiceV1`, the validated invoice schema. Every leaf is a
+  `Field<T> = { value: T | null; confidence }`.
+- `json-types.ts` — `rawInvoiceSchema` (the flat, lenient JSON the model emits)
+  plus `mapRawToInvoice()` and `parseNumber()`.
+- `rules/` — deterministic validation (Phase 08).
+
+## Field confidence semantics
+
+| confidence  | meaning                                                |
+| ----------- | ------------------------------------------------------ |
+| `extracted` | read directly from the document                        |
+| `inferred`  | present but the model flagged the path in `_uncertain` |
+| `missing`   | absent — `value` is `null`                             |
+
+`parseNumber` tolerates formatted strings ("AED 1,234.50" → `1234.5`) and
+returns `null` for anything non-numeric, so a garbled figure surfaces as a
+missing value rather than a wrong one. The `uncertain` path list rides along on
+the invoice for the validation layer (rule R024) and the export envelope.
