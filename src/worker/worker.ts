@@ -6,6 +6,7 @@
 import { AutoTokenizer } from '@huggingface/transformers';
 import * as ort from 'onnxruntime-web';
 import type { DeviceProfile } from '../capability/profile.ts';
+import { initialRecoveryState, onDeviceLost } from '../perf/recovery.ts';
 import { chwDims, DEFAULT_NORMALIZE, pixelsToCHW } from '../pipeline/ingest/normalize.ts';
 import { runGeneration, type DecoderConfig, type TokenizerLike } from './generate.ts';
 import { getFile, openModelCache, type CacheLike } from './loader/cache.ts';
@@ -32,6 +33,26 @@ let tokenizer: TokenizerLike | null = null;
 let decoderConfig: DecoderConfig | null = null;
 let activeId: string | null = null;
 let abortRequested = false;
+let lastProfile: DeviceProfile | null = null;
+let recovery = initialRecoveryState('wasm');
+
+function isDeviceLost(message: string): boolean {
+  return /device.*lost|lost.*device|gpu.*device/i.test(message);
+}
+
+async function recoverFromDeviceLoss(now: number): Promise<void> {
+  if (!lastProfile) return;
+  const outcome = onDeviceLost(recovery, now);
+  recovery = outcome.state;
+  await sessions?.dispose();
+  sessions = null;
+  const profile: DeviceProfile =
+    outcome.decision === 'demote-to-wasm'
+      ? { ...lastProfile, executionProvider: 'wasm' }
+      : lastProfile;
+  lastProfile = profile;
+  sessions = await createSessions(profile, { cache: await openModelCache() });
+}
 
 function post(message: WorkerToMain): void {
   self.postMessage(message);
@@ -75,6 +96,8 @@ function adaptTokenizer(instance: {
 }
 
 async function handleLoad(profile: DeviceProfile): Promise<void> {
+  lastProfile = profile;
+  recovery = initialRecoveryState(profile.executionProvider);
   const cache = await openModelCache();
   post({ type: 'load-progress', stage: 'reading-cache', fraction: 0 });
 
@@ -153,6 +176,13 @@ async function handleInfer(message: Extract<MainToWorker, { type: 'infer' }>): P
     post({ type: 'done', id: message.id, fullText, stats });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
+    if (isDeviceLost(msg)) {
+      try {
+        await recoverFromDeviceLoss(performance.now());
+      } catch {
+        // recovery failed; surfaced below as a recoverable error
+      }
+    }
     post({ type: 'error', id: message.id, message: msg, recoverable: true });
   } finally {
     for (const embed of imageEmbeds) {
