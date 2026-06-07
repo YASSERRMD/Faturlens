@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "note": "Synthetic demo invoices. No real vendor data. HTML sources are rendered to PNG/PDF at build time.",
+  "invoices": [
+    { "id": "clean-en", "title": "Clean English invoice", "source": "clean-en.html" },
+    { "id": "bilingual", "title": "Bilingual Arabic–English invoice", "source": "bilingual.html" },
+    { "id": "multipage", "title": "Multi-page invoice", "source": "multipage.html" },
+    {
+      "id": "broken-math",
+      "title": "Broken-math invoice (validation showcase)",
+      "source": "broken-math.html"
+    }
+  ]
+}

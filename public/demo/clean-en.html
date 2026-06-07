@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; color: #111; margin: 48px; width: 720px; }
+      h1 { margin: 0; }
+      .meta { margin: 16px 0; }
+      table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+      th, td { border: 1px solid #999; padding: 6px 10px; text-align: left; }
+      td.num, th.num { text-align: right; }
+      .totals { margin-top: 16px; width: 280px; margin-left: auto; }
+      .totals td { border: none; padding: 2px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Acme Trading FZE</h1>
+    <div class="meta">
+      Dubai, United Arab Emirates · TRN: 100123456700003<br />
+      Invoice #: INV-2026-0042 · Issue date: 2026-01-15 · Due date: 2026-02-14 · Currency: AED
+    </div>
+    <table>
+      <thead>
+        <tr><th>Description</th><th class="num">Qty</th><th class="num">Unit Price</th><th class="num">Amount</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Consulting services</td><td class="num">10</td><td class="num">150.00</td><td class="num">1500.00</td></tr>
+        <tr><td>Support package</td><td class="num">2</td><td class="num">250.00</td><td class="num">500.00</td></tr>
+      </tbody>
+    </table>
+    <table class="totals">
+      <tr><td>Subtotal</td><td class="num">2000.00</td></tr>
+      <tr><td>VAT (5%)</td><td class="num">100.00</td></tr>
+      <tr><td><strong>Total</strong></td><td class="num"><strong>2100.00</strong></td></tr>
+    </table>
+  </body>
+</html>
