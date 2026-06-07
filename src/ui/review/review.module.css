@@ -1,0 +1,215 @@
+.screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 1280px) {
+  .screen {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow: auto;
+  padding-right: 0.5rem;
+}
+
+.group {
+  border: 1px solid var(--fl-border);
+  border-radius: var(--fl-radius-lg);
+  padding: 1rem;
+  background: var(--fl-surface);
+}
+
+.groupTitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.label {
+  font-size: 0.82rem;
+  color: var(--fl-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+}
+.dotOk {
+  background: var(--fl-ok);
+}
+.dotWarning {
+  background: var(--fl-warning);
+}
+.dotError {
+  background: var(--fl-error);
+}
+
+.input {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--fl-border);
+  border-radius: var(--fl-radius);
+  background: var(--fl-surface-raised);
+  color: var(--fl-text);
+  width: 100%;
+}
+.inputError {
+  border-color: var(--fl-error);
+}
+.inputWarning {
+  border-color: var(--fl-warning);
+}
+
+.edited {
+  color: var(--fl-text-muted);
+  font-size: 0.75rem;
+}
+
+.findings {
+  grid-column: 2;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+}
+.findingError {
+  color: var(--fl-error);
+}
+.findingWarning {
+  color: var(--fl-warning);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.table th,
+.table td {
+  border: 1px solid var(--fl-border);
+  padding: 0.25rem;
+}
+.cellInput {
+  font: inherit;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+.disagree {
+  background: var(--fl-error-bg);
+}
+
+.iconButton {
+  font: inherit;
+  border: 1px solid var(--fl-border);
+  background: var(--fl-surface-raised);
+  border-radius: var(--fl-radius);
+  cursor: pointer;
+  padding: 0.15rem 0.5rem;
+}
+
+.approvalBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--fl-border);
+  background: var(--fl-surface);
+}
+
+.verdict {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+.verdictClean {
+  color: var(--fl-ok);
+}
+.verdictNeedsReview {
+  color: var(--fl-warning);
+}
+.verdictRejected {
+  color: var(--fl-error);
+}
+
+.approveButton {
+  font: inherit;
+  margin-left: auto;
+  padding: 0.45rem 1.1rem;
+  border-radius: var(--fl-radius);
+  border: 1px solid var(--fl-ok);
+  background: var(--fl-ok);
+  color: #fff;
+  cursor: pointer;
+}
+.approveButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: var(--fl-text-muted);
+  border-color: var(--fl-text-muted);
+}
+
+.imagePane {
+  border: 1px solid var(--fl-border);
+  border-radius: var(--fl-radius-lg);
+  background: var(--fl-surface);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.imageControls {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--fl-border);
+}
+.imageViewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  background: #2a2a2a;
+}
+.imageViewport img {
+  position: absolute;
+  transform-origin: 0 0;
+  user-select: none;
+}
+
+.drawer {
+  margin-top: 1rem;
+}
+.drawerToggle {
+  font: inherit;
+  background: none;
+  border: none;
+  color: var(--fl-text-muted);
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
