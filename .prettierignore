@@ -1,0 +1,9 @@
+dist
+coverage
+node_modules
+package-lock.json
+*.min.js
+public/demo
+
+# Versioned spec — kept verbatim from the prompt pack
+CLAUDE.md
