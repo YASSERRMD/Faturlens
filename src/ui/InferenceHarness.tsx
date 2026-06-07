@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDeviceProfile } from '../capability/useDeviceProfile.tsx';
 import { cx } from '../lib/cx.ts';
+import { ingestFile, preprocessPage } from '../pipeline/ingest/ingest.ts';
 import {
   createInferenceClient,
   type InferenceClient,
@@ -40,7 +41,17 @@ export function InferenceHarness(): React.JSX.Element {
       const client = clientRef.current;
       await client.load(profile);
 
-      const images = await Promise.all(files.map((file) => createImageBitmap(file)));
+      // Ingest the first file (image or PDF), tile its first page to budget.
+      let images: ImageBitmap[] = [];
+      const first = files[0];
+      if (first) {
+        const ingested = await ingestFile(first);
+        if (!ingested.ok) throw new Error(ingested.rejection.message);
+        const page = await ingested.document.getPage(0);
+        const processed = await preprocessPage(page, profile.maxTilesPerPage);
+        images = processed.thumbnail ? [...processed.tiles, processed.thumbnail] : processed.tiles;
+      }
+
       const handle = client.infer({ images, prompt, maxNewTokens: 1024 });
       handleRef.current = handle;
       for await (const token of handle) setOutput((prev) => prev + token);
@@ -75,7 +86,7 @@ export function InferenceHarness(): React.JSX.Element {
         <input
           id="harness-files"
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp,application/pdf"
           multiple
           onChange={(e) => {
             setFiles(Array.from(e.target.files ?? []));
