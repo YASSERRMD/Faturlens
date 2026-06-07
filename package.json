@@ -23,6 +23,9 @@
     "ci": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "onnxruntime-web": "^1.26.0",
+    "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

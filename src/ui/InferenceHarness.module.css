@@ -1,0 +1,84 @@
+.harness {
+  max-width: 48rem;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
+  border: 1px solid var(--fl-border, #d8d8d8);
+  border-radius: 0.75rem;
+  background: var(--fl-surface, #fafafa);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.prompt {
+  width: 100%;
+  min-height: 5rem;
+  font: inherit;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ccc;
+  resize: vertical;
+}
+
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.button {
+  font: inherit;
+  padding: 0.45rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #1a7f37;
+  background: #1a7f37;
+  color: #fff;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary {
+  background: #fff;
+  color: #1a1a1a;
+  border-color: #888;
+}
+
+.output {
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  min-height: 6rem;
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.stats {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  color: #8a1f1f;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}

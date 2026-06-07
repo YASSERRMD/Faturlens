@@ -1,5 +1,6 @@
 import styles from './App.module.css';
 import { DeviceReport } from './ui/DeviceReport.tsx';
+import { InferenceHarness } from './ui/InferenceHarness.tsx';
 import { ModelDownloadGate } from './ui/ModelDownloadGate.tsx';
 
 function useFlag(name: string): boolean {
@@ -10,6 +11,7 @@ function useFlag(name: string): boolean {
 export function App(): React.JSX.Element {
   const diag = useFlag('diag');
   const model = useFlag('model');
+  const harness = useFlag('harness');
 
   const content = (
     <main className={styles.shell}>
@@ -18,6 +20,7 @@ export function App(): React.JSX.Element {
         Browser-native invoice OCR. Fully client-side — no data leaves your machine.
       </p>
       {diag ? <DeviceReport /> : null}
+      {harness ? <InferenceHarness /> : null}
     </main>
   );
 
