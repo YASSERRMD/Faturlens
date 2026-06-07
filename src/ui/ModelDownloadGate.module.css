@@ -1,0 +1,83 @@
+.gate {
+  max-width: 36rem;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border: 1px solid var(--fl-border, #d8d8d8);
+  border-radius: 0.75rem;
+  background: var(--fl-surface, #fafafa);
+}
+
+.heading {
+  margin: 0 0 0.25rem;
+  font-size: 1.2rem;
+}
+
+.sub {
+  margin: 0 0 1.25rem;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.bar {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #e4e4e4;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background: #1a7f37;
+  transition: width 120ms linear;
+}
+
+.overall {
+  margin-bottom: 1rem;
+}
+
+.overallMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.file {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-top: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.notice {
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.resume {
+  background: #fff4d6;
+  color: #7a5b00;
+}
+
+.warning {
+  background: #fde8e8;
+  color: #8a1f1f;
+}
+
+.error {
+  background: #fde8e8;
+  color: #8a1f1f;
+}
+
+.retry {
+  margin-top: 0.75rem;
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid #888;
+  background: #fff;
+  cursor: pointer;
+}
