@@ -1,0 +1,66 @@
+.card {
+  border: 1px solid var(--fl-border, #d8d8d8);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  max-width: 40rem;
+  background: var(--fl-surface, #fafafa);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.badgeWebgpu {
+  background: #1a7f37;
+}
+
+.badgeWasm {
+  background: #9a6700;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  font-size: 0.9rem;
+}
+
+.key {
+  opacity: 0.65;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+}
+
+.warnings {
+  margin: 1rem 0 0;
+  padding-left: 1.1rem;
+  color: #9a6700;
+  font-size: 0.85rem;
+}
+
+.clean {
+  margin: 1rem 0 0;
+  color: #1a7f37;
+  font-size: 0.85rem;
+}
