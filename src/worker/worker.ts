@@ -6,6 +6,7 @@
 import { AutoTokenizer } from '@huggingface/transformers';
 import * as ort from 'onnxruntime-web';
 import type { DeviceProfile } from '../capability/profile.ts';
+import { chwDims, DEFAULT_NORMALIZE, pixelsToCHW } from '../pipeline/ingest/normalize.ts';
 import { runGeneration, type DecoderConfig, type TokenizerLike } from './generate.ts';
 import { getFile, openModelCache, type CacheLike } from './loader/cache.ts';
 import { MODEL_REPO } from './loader/manifest.ts';
@@ -105,28 +106,15 @@ async function encodeTiles(images: ImageBitmap[]): Promise<ort.Tensor[]> {
   return embeds;
 }
 
-const PIXEL_SIZE = 512;
-const PIXEL_MEAN = 0.5;
-const PIXEL_STD = 0.5;
-
 function imageToPixelTensor(image: ImageBitmap): ort.Tensor {
-  const canvas = new OffscreenCanvas(PIXEL_SIZE, PIXEL_SIZE);
+  const size = DEFAULT_NORMALIZE.size;
+  const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('OffscreenCanvas 2D context unavailable');
-  ctx.drawImage(image, 0, 0, PIXEL_SIZE, PIXEL_SIZE);
-  const { data } = ctx.getImageData(0, 0, PIXEL_SIZE, PIXEL_SIZE);
-
-  const plane = PIXEL_SIZE * PIXEL_SIZE;
-  const out = new Float32Array(3 * plane);
-  for (let i = 0; i < plane; i += 1) {
-    const r = (data[i * 4] ?? 0) / 255;
-    const g = (data[i * 4 + 1] ?? 0) / 255;
-    const b = (data[i * 4 + 2] ?? 0) / 255;
-    out[i] = (r - PIXEL_MEAN) / PIXEL_STD;
-    out[plane + i] = (g - PIXEL_MEAN) / PIXEL_STD;
-    out[2 * plane + i] = (b - PIXEL_MEAN) / PIXEL_STD;
-  }
-  return new ort.Tensor('float32', out, [1, 3, PIXEL_SIZE, PIXEL_SIZE]);
+  ctx.drawImage(image, 0, 0, size, size);
+  const { data } = ctx.getImageData(0, 0, size, size);
+  const chw = pixelsToCHW(data, size, size, DEFAULT_NORMALIZE);
+  return new ort.Tensor('float32', chw, chwDims(size));
 }
 
 async function handleInfer(message: Extract<MainToWorker, { type: 'infer' }>): Promise<void> {
