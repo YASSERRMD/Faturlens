@@ -1,0 +1,30 @@
+/* Shared design tokens. Imported once in main.tsx. */
+:root {
+  --fl-border: #d8d8d8;
+  --fl-surface: #fafafa;
+  --fl-surface-raised: #ffffff;
+  --fl-text: #1a1a1a;
+  --fl-text-muted: #6a6a6a;
+
+  --fl-ok: #1a7f37;
+  --fl-warning: #9a6700;
+  --fl-error: #b42318;
+
+  --fl-ok-bg: #e6f4ea;
+  --fl-warning-bg: #fff4d6;
+  --fl-error-bg: #fde8e8;
+
+  --fl-radius: 0.5rem;
+  --fl-radius-lg: 0.75rem;
+  --fl-gap: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fl-border: #333;
+    --fl-surface: #1e1e1e;
+    --fl-surface-raised: #262626;
+    --fl-text: rgba(255, 255, 255, 0.9);
+    --fl-text-muted: #9a9a9a;
+  }
+}

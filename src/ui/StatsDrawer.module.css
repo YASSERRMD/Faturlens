@@ -1,0 +1,32 @@
+.drawer {
+  border: 1px solid var(--fl-border, #d8d8d8);
+  border-radius: var(--fl-radius, 0.5rem);
+  background: var(--fl-surface, #fafafa);
+  font-size: 0.82rem;
+}
+
+.toggle {
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: var(--fl-text, #1a1a1a);
+}
+
+.body {
+  padding: 0 0.75rem 0.75rem;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.15rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.key {
+  color: var(--fl-text-muted, #6a6a6a);
+}

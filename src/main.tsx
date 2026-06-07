@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { DeviceProfileProvider } from './capability/useDeviceProfile.tsx';
+import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
+import './ui/tokens.css';
 import './index.css';
 
 const rootElement = document.getElementById('root');
@@ -11,8 +13,10 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <DeviceProfileProvider>
-      <App />
-    </DeviceProfileProvider>
+    <ErrorBoundary>
+      <DeviceProfileProvider>
+        <App />
+      </DeviceProfileProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; color: #111; margin: 48px; width: 720px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+      th, td { border: 1px solid #999; padding: 6px 10px; }
+      td.num { text-align: right; }
+    </style>
+  </head>
+  <body>
+    <h1>Initech Solutions</h1>
+    <div>TRN: 100555666700003 · Invoice #: INI-9001 · Date: 2026-05-20 · Currency: AED</div>
+    <!-- Deliberately broken: line amounts and the subtotal do not add up. -->
+    <table>
+      <thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Software license</td><td class="num">3</td><td class="num">200.00</td><td class="num">700.00</td></tr>
+        <tr><td>Onboarding</td><td class="num">1</td><td class="num">500.00</td><td class="num">500.00</td></tr>
+      </tbody>
+    </table>
+    <!-- subtotal should be 1200 (per stated amounts) but is wrong; total ignores tax -->
+    <p>Subtotal: 1000.00 · VAT (5%): 60.00 · Total: 1500.00</p>
+  </body>
+</html>
