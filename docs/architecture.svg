@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" width="760" height="420" font-family="Arial, sans-serif" font-size="13">
+  <rect width="760" height="420" fill="#ffffff" />
+  <text x="380" y="28" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a1a1a">Faturlens architecture</text>
+
+  <!-- Main thread -->
+  <rect x="40" y="56" width="680" height="120" rx="10" fill="#f1f7f3" stroke="#1a7f37" />
+  <text x="56" y="78" font-weight="bold" fill="#1a7f37">Main thread (UI)</text>
+  <g fill="#ffffff" stroke="#1a7f37">
+    <rect x="56" y="92" width="120" height="64" rx="6" />
+    <rect x="196" y="92" width="120" height="64" rx="6" />
+    <rect x="336" y="92" width="120" height="64" rx="6" />
+    <rect x="476" y="92" width="120" height="64" rx="6" />
+    <rect x="616" y="92" width="88" height="64" rx="6" />
+  </g>
+  <g fill="#1a1a1a" text-anchor="middle">
+    <text x="116" y="128">capability</text>
+    <text x="256" y="128">model gate</text>
+    <text x="396" y="128">ingest + tile</text>
+    <text x="536" y="128">review</text>
+    <text x="660" y="128">export</text>
+  </g>
+
+  <!-- Worker -->
+  <rect x="40" y="216" width="680" height="120" rx="10" fill="#fbf7ec" stroke="#9a6700" />
+  <text x="56" y="238" font-weight="bold" fill="#9a6700">Inference Web Worker (ORT: WebGPU | WASM)</text>
+  <g fill="#ffffff" stroke="#9a6700">
+    <rect x="56" y="252" width="180" height="64" rx="6" />
+    <rect x="256" y="252" width="200" height="64" rx="6" />
+    <rect x="476" y="252" width="228" height="64" rx="6" />
+  </g>
+  <g fill="#1a1a1a" text-anchor="middle">
+    <text x="146" y="280">Cache API bytes →</text>
+    <text x="146" y="298">ORT sessions</text>
+    <text x="356" y="280">Pass 1</text>
+    <text x="356" y="298">markdown transcription</text>
+    <text x="590" y="280">Pass 2</text>
+    <text x="590" y="298">schema-constrained JSON</text>
+  </g>
+
+  <!-- Arrows -->
+  <g stroke="#666" stroke-width="1.5" marker-end="url(#arrow)">
+    <line x1="300" y1="176" x2="300" y2="216" />
+    <line x1="460" y1="216" x2="460" y2="176" />
+  </g>
+  <text x="250" y="200" fill="#666">images / prompts</text>
+  <text x="470" y="200" fill="#666">tokens / stats</text>
+
+  <!-- Validation -->
+  <rect x="180" y="364" width="400" height="40" rx="8" fill="#fde8e8" stroke="#b42318" />
+  <text x="380" y="389" text-anchor="middle" fill="#b42318">Deterministic validation (pure TS, zero ML) → human review</text>
+  <line x1="380" y1="336" x2="380" y2="364" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)" />
+
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#666" />
+    </marker>
+  </defs>
+</svg>
