@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/banner.png" alt="Faturlens — browser-native invoice OCR" width="100%" />
+</p>
+
 # Faturlens
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
@@ -11,7 +15,7 @@ download.
 
 ## Architecture
 
-![Architecture](docs/architecture.svg)
+![Faturlens architecture](docs/assets/architecture.png)
 
 A two-pass pipeline runs entirely in a dedicated Web Worker: **Pass 1**
 transcribes the whole invoice to Markdown; **Pass 2** extracts schema-constrained

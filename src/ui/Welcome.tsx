@@ -1,26 +1,39 @@
+import { DEMOS, type Demo } from './demos.ts';
 import styles from './Welcome.module.css';
 
 export interface WelcomeProps {
-  onLoadDemos: () => void;
   onUpload: () => void;
+  onOpenDemo: (demo: Demo) => void;
 }
 
-/** First-run welcome with a demo loader. */
-export function Welcome({ onLoadDemos, onUpload }: WelcomeProps): React.JSX.Element {
+/** First-run welcome: upload an invoice or open one of the offline demos. */
+export function Welcome({ onUpload, onOpenDemo }: WelcomeProps): React.JSX.Element {
   return (
     <section className={styles.welcome}>
       <h2>Welcome to Faturlens</h2>
       <p>
-        Drop an invoice (PNG, JPEG, WebP, or PDF) and Faturlens extracts structured data entirely on
-        your device — no server, no upload, no data leaving your machine.
+        Upload an invoice (PNG, JPEG, WebP, or PDF) to review and validate it on your device — no
+        server, no upload, no data leaving your machine. Or open a demo below to see the review and
+        validation layer in action instantly (no model download).
       </p>
       <div className={styles.actions}>
         <button type="button" className={styles.primary} onClick={onUpload}>
           Upload an invoice
         </button>
-        <button type="button" className={styles.secondary} onClick={onLoadDemos}>
-          Load demo invoices
-        </button>
+      </div>
+      <div className={styles.demos}>
+        {DEMOS.map((demo) => (
+          <button
+            key={demo.id}
+            type="button"
+            className={styles.demoChip}
+            onClick={() => {
+              onOpenDemo(demo);
+            }}
+          >
+            {demo.title}
+          </button>
+        ))}
       </div>
     </section>
   );

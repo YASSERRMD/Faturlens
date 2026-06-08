@@ -91,6 +91,8 @@ export function createInferenceClient(): InferenceClient {
 }
 
 export class InferenceClient {
+  /** Optional model-load progress sink (stage + fraction in [0,1]). */
+  onLoadProgress: ((stage: string, fraction: number) => void) | null = null;
   private readyPromise: Promise<void> | null = null;
   private resolveReady: (() => void) | null = null;
   private rejectReady: ((error: Error) => void) | null = null;
@@ -206,6 +208,7 @@ export class InferenceClient {
         return;
       }
       case 'load-progress':
+        this.onLoadProgress?.(data.stage, data.fraction);
         return;
       default:
         return;

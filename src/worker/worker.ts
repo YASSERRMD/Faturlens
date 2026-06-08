@@ -1,143 +1,99 @@
 /// <reference lib="webworker" />
-// Inference worker entry point. Wires the message protocol to ORT sessions and
-// the generation loop. Enforces a single in-flight inference; concurrent infer
-// messages are rejected with a typed error (queueing is the client's job).
+// Inference worker. Generation is driven by Transformers.js 4.x, which ships the
+// real LFM2-VL implementation (Lfm2VlProcessor + Lfm2VlForConditionalGeneration)
+// — correct image preprocessing (tiling/patches/spatial_shapes), chat template,
+// image-token merge, and the hybrid conv+attention KV cache. Single in-flight;
+// concurrent infer messages are rejected with a typed error.
 
-import { AutoTokenizer } from '@huggingface/transformers';
-import * as ort from 'onnxruntime-web';
+import {
+  AutoModelForImageTextToText,
+  AutoProcessor,
+  env,
+  RawImage,
+  TextStreamer,
+} from '@huggingface/transformers';
+import { selectBackend, type BackendPlan } from '../capability/backend.ts';
 import type { DeviceProfile } from '../capability/profile.ts';
-import { initialRecoveryState, onDeviceLost } from '../perf/recovery.ts';
-import { chwDims, DEFAULT_NORMALIZE, pixelsToCHW } from '../pipeline/ingest/normalize.ts';
-import { runGeneration, type DecoderConfig, type TokenizerLike } from './generate.ts';
-import { getFile, openModelCache, type CacheLike } from './loader/cache.ts';
-import { MODEL_REPO } from './loader/manifest.ts';
 import { isMainToWorker, type MainToWorker, type WorkerToMain } from './protocol.ts';
-import { createSessions, type ModelSessions } from './sessions.ts';
 
 declare const self: DedicatedWorkerGlobalScope;
 
-interface RawConfig {
-  num_hidden_layers?: number;
-  num_key_value_heads?: number;
-  num_attention_heads?: number;
-  head_dim?: number;
-  hidden_size?: number;
-  eos_token_id?: number | number[];
-  image_token_id?: number;
-  image_token_index?: number;
-  text_config?: RawConfig;
+const MODEL_ID = 'LiquidAI/LFM2.5-VL-1.6B-ONNX';
+
+// Transformers.js manages model fetching + caching itself; allow remote models.
+env.allowLocalModels = false;
+
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument -- transformers.js APIs are loosely typed */
+interface LoadedModel {
+  processor: any;
+  model: any;
 }
 
-let sessions: ModelSessions | null = null;
-let tokenizer: TokenizerLike | null = null;
-let decoderConfig: DecoderConfig | null = null;
+let loaded: LoadedModel | null = null;
+let loadPromise: Promise<LoadedModel> | null = null;
+let plans: BackendPlan[] = [];
+let activeBackend: string | null = null;
 let activeId: string | null = null;
 let abortRequested = false;
-let lastProfile: DeviceProfile | null = null;
-let recovery = initialRecoveryState('wasm');
-
-function isDeviceLost(message: string): boolean {
-  return /device.*lost|lost.*device|gpu.*device/i.test(message);
-}
-
-async function recoverFromDeviceLoss(now: number): Promise<void> {
-  if (!lastProfile) return;
-  const outcome = onDeviceLost(recovery, now);
-  recovery = outcome.state;
-  await sessions?.dispose();
-  sessions = null;
-  const profile: DeviceProfile =
-    outcome.decision === 'demote-to-wasm'
-      ? { ...lastProfile, executionProvider: 'wasm' }
-      : lastProfile;
-  lastProfile = profile;
-  sessions = await createSessions(profile, { cache: await openModelCache() });
-}
 
 function post(message: WorkerToMain): void {
   self.postMessage(message);
 }
 
-function asDecoderConfig(raw: RawConfig): DecoderConfig {
-  const text = raw.text_config ?? raw;
-  const numLayers = text.num_hidden_layers ?? 24;
-  const numAttnHeads = text.num_attention_heads ?? 16;
-  const numKeyValueHeads = text.num_key_value_heads ?? numAttnHeads;
-  const hiddenSize = text.hidden_size ?? 2048;
-  const headDim = text.head_dim ?? Math.floor(hiddenSize / numAttnHeads);
-  const eos = Array.isArray(text.eos_token_id)
-    ? (text.eos_token_id[0] ?? 0)
-    : (text.eos_token_id ?? 0);
-  const imageToken = raw.image_token_id ?? raw.image_token_index ?? 0;
-  return {
-    numLayers,
-    numKeyValueHeads,
-    headDim,
-    eosTokenId: eos,
-    imageTokenId: imageToken,
-  };
+function imageBitmapToRawImage(bitmap: ImageBitmap): RawImage {
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('OffscreenCanvas 2D context unavailable');
+  ctx.drawImage(bitmap, 0, 0);
+  const { data, width, height } = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+  return new RawImage(new Uint8ClampedArray(data), width, height, 4).rgb();
 }
 
-async function loadConfig(cache: CacheLike): Promise<DecoderConfig> {
-  const bytes = await getFile('config.json', cache);
-  if (!bytes) throw new Error('config.json missing from cache');
-  const raw = JSON.parse(new TextDecoder().decode(bytes)) as RawConfig;
-  return asDecoderConfig(raw);
+function onProgress(p: any): void {
+  const progress: unknown = p?.progress;
+  if (typeof progress === 'number') {
+    post({ type: 'load-progress', stage: 'creating-sessions', fraction: progress / 100 });
+  }
 }
 
-function adaptTokenizer(instance: {
-  encode: (text: string) => number[];
-  decode: (ids: number[], options?: { skip_special_tokens?: boolean }) => string;
-}): TokenizerLike {
-  return {
-    encode: (text) => instance.encode(text),
-    decode: (ids) => instance.decode(ids, { skip_special_tokens: true }),
-  };
+async function loadWithPlan(plan: BackendPlan): Promise<LoadedModel> {
+  const processor = await AutoProcessor.from_pretrained(MODEL_ID, { progress_callback: onProgress });
+  const model = await AutoModelForImageTextToText.from_pretrained(MODEL_ID, {
+    dtype: plan.dtype as any,
+    device: plan.device,
+    progress_callback: onProgress,
+  });
+  return { processor, model };
+}
+
+async function ensureLoaded(): Promise<LoadedModel> {
+  if (loaded) return loaded;
+  loadPromise ??= (async (): Promise<LoadedModel> => {
+    post({ type: 'load-progress', stage: 'reading-cache', fraction: 0 });
+    let lastError: unknown = null;
+    for (const plan of plans) {
+      try {
+        const result = await loadWithPlan(plan);
+        activeBackend = plan.label;
+        console.info(`[faturlens] inference backend: ${plan.label}`);
+        loaded = result;
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.warn(`[faturlens] backend "${plan.label}" failed, trying next`, error);
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error('No inference backend could be loaded');
+  })();
+  return loadPromise;
 }
 
 async function handleLoad(profile: DeviceProfile): Promise<void> {
-  lastProfile = profile;
-  recovery = initialRecoveryState(profile.executionProvider);
-  const cache = await openModelCache();
-  post({ type: 'load-progress', stage: 'reading-cache', fraction: 0 });
-
-  decoderConfig = await loadConfig(cache);
-  const loaded = await AutoTokenizer.from_pretrained(MODEL_REPO);
-  tokenizer = adaptTokenizer(loaded);
-
-  sessions = await createSessions(profile, {
-    cache,
-    onProgress: (stage, fraction) => {
-      post({ type: 'load-progress', stage, fraction });
-    },
-  });
-
+  const selection = selectBackend(profile);
+  plans = [selection.primary, ...(selection.fallback ? [selection.fallback] : [])];
+  await ensureLoaded();
   post({ type: 'load-progress', stage: 'warming-up', fraction: 1 });
-  post({ type: 'ready' });
-}
-
-async function encodeTiles(images: ImageBitmap[]): Promise<ort.Tensor[]> {
-  if (!sessions || images.length === 0) return [];
-  const embeds: ort.Tensor[] = [];
-  for (const image of images) {
-    const pixels = imageToPixelTensor(image);
-    const out = await sessions.visionEncoder.run({ pixel_values: pixels });
-    pixels.dispose();
-    const features = out.image_features ?? Object.values(out)[0];
-    if (features instanceof ort.Tensor) embeds.push(features);
-  }
-  return embeds;
-}
-
-function imageToPixelTensor(image: ImageBitmap): ort.Tensor {
-  const size = DEFAULT_NORMALIZE.size;
-  const canvas = new OffscreenCanvas(size, size);
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('OffscreenCanvas 2D context unavailable');
-  ctx.drawImage(image, 0, 0, size, size);
-  const { data } = ctx.getImageData(0, 0, size, size);
-  const chw = pixelsToCHW(data, size, size, DEFAULT_NORMALIZE);
-  return new ort.Tensor('float32', chw, chwDims(size));
+  post({ type: 'ready', ...(activeBackend ? { backend: activeBackend } : {}) });
 }
 
 async function handleInfer(message: Extract<MainToWorker, { type: 'infer' }>): Promise<void> {
@@ -150,48 +106,71 @@ async function handleInfer(message: Extract<MainToWorker, { type: 'infer' }>): P
     });
     return;
   }
-  if (!sessions || !tokenizer || !decoderConfig) {
-    post({ type: 'error', id: message.id, message: 'Model is not loaded', recoverable: false });
-    return;
-  }
-
   activeId = message.id;
   abortRequested = false;
-  const imageEmbeds = await encodeTiles(message.images);
 
   try {
-    const { fullText, stats } = await runGeneration({
-      sessions,
-      tokenizer,
-      config: decoderConfig,
-      prompt: message.prompt,
-      imageEmbeds,
-      maxNewTokens: message.maxNewTokens,
-      shouldAbort: () => abortRequested,
-      onToken: (text) => {
-        post({ type: 'token', id: message.id, text });
+    const { processor, model } = await ensureLoaded();
+    const firstImage = message.images[0];
+    const images = firstImage ? [imageBitmapToRawImage(firstImage)] : [];
+
+    const messages = [
+      {
+        role: 'user',
+        content: [
+          ...(images.length > 0 ? [{ type: 'image' }] : []),
+          { type: 'text', text: message.prompt },
+        ],
       },
-      now: () => performance.now(),
+    ];
+
+    const text = processor.apply_chat_template(messages, { add_generation_prompt: true });
+    // Lfm2VlProcessor signature is (images, text).
+    const inputs = await processor(images, text);
+
+    const start = performance.now();
+    let prefillMs = 0;
+    let tokenCount = 0;
+    let fullText = '';
+    const streamer = new TextStreamer(processor.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+      callback_function: (chunk: string) => {
+        if (abortRequested) return;
+        if (prefillMs === 0) prefillMs = performance.now() - start;
+        tokenCount += 1;
+        fullText += chunk;
+        post({ type: 'token', id: message.id, text: chunk });
+      },
     });
-    post({ type: 'done', id: message.id, fullText, stats });
+
+    await model.generate({
+      ...inputs,
+      max_new_tokens: Math.min(message.maxNewTokens, 4096),
+      do_sample: false,
+      streamer,
+    });
+
+    const decodeMs = performance.now() - start - prefillMs;
+    post({
+      type: 'done',
+      id: message.id,
+      fullText: fullText.trim(),
+      stats: {
+        prefillMs,
+        decodeMs,
+        tokensPerSecond: decodeMs > 0 ? (tokenCount / decodeMs) * 1000 : 0,
+        peakMemoryEstimateMB: 0,
+      },
+    });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    if (isDeviceLost(msg)) {
-      try {
-        await recoverFromDeviceLoss(performance.now());
-      } catch {
-        // recovery failed; surfaced below as a recoverable error
-      }
-    }
-    post({ type: 'error', id: message.id, message: msg, recoverable: true });
+    post({
+      type: 'error',
+      id: message.id,
+      message: error instanceof Error ? error.message : String(error),
+      recoverable: true,
+    });
   } finally {
-    for (const embed of imageEmbeds) {
-      try {
-        embed.dispose();
-      } catch {
-        // already released
-      }
-    }
     activeId = null;
   }
 }
@@ -208,10 +187,8 @@ async function handleMessage(message: MainToWorker): Promise<void> {
       if (activeId === message.id) abortRequested = true;
       return;
     case 'dispose':
-      await sessions?.dispose();
-      sessions = null;
-      tokenizer = null;
-      decoderConfig = null;
+      loaded = null;
+      loadPromise = null;
       return;
     default:
       return;
@@ -221,7 +198,11 @@ async function handleMessage(message: MainToWorker): Promise<void> {
 self.addEventListener('message', (event: MessageEvent) => {
   if (!isMainToWorker(event.data)) return;
   void handleMessage(event.data).catch((error: unknown) => {
-    const msg = error instanceof Error ? error.message : String(error);
-    post({ type: 'error', message: msg, recoverable: false });
+    post({
+      type: 'error',
+      message: error instanceof Error ? error.message : String(error),
+      recoverable: false,
+    });
   });
 });
+/* eslint-enable @typescript-eslint/no-explicit-any */
