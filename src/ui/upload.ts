@@ -37,7 +37,7 @@ export function emptyInvoice(): InvoiceV1 {
   };
 }
 
-function bitmapToDataUrl(bitmap: ImageBitmap): string {
+export function bitmapToDataUrl(bitmap: ImageBitmap): string {
   const canvas = document.createElement('canvas');
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;

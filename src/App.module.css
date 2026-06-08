@@ -20,3 +20,42 @@
   margin: 0;
   opacity: 0.7;
 }
+
+.processing {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--fl-border, #d8d8d8);
+  border-radius: var(--fl-radius-lg, 0.75rem);
+  background: var(--fl-surface, #fafafa);
+}
+
+.stageLabel {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}
+
+.progressBar {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #e4e4e4;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--fl-ok, #1a7f37);
+  transition: width 120ms linear;
+}
+
+.streamOut {
+  margin-top: 1rem;
+  max-height: 16rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: var(--fl-surface-raised, #fff);
+  border: 1px solid var(--fl-border, #e0e0e0);
+  border-radius: var(--fl-radius, 0.5rem);
+  padding: 0.75rem;
+}
