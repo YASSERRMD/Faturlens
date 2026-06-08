@@ -7,8 +7,10 @@
 
 import {
   AutoModelForImageTextToText,
-  AutoProcessor,
+  AutoTokenizer,
   env,
+  Lfm2VlImageProcessor,
+  Lfm2VlProcessor,
   RawImage,
   TextStreamer,
 } from '@huggingface/transformers';
@@ -19,6 +21,7 @@ import { isMainToWorker, type MainToWorker, type WorkerToMain } from './protocol
 declare const self: DedicatedWorkerGlobalScope;
 
 const MODEL_ID = 'LiquidAI/LFM2.5-VL-1.6B-ONNX';
+const MODEL_BASE = `https://huggingface.co/${MODEL_ID}/resolve/main`;
 
 // Transformers.js manages model fetching + caching itself; allow remote models.
 env.allowLocalModels = false;
@@ -56,28 +59,47 @@ function onProgress(p: any): void {
   }
 }
 
-async function loadWithPlan(plan: BackendPlan): Promise<LoadedModel> {
-  const processor = await AutoProcessor.from_pretrained(MODEL_ID, { progress_callback: onProgress });
-  const model = await AutoModelForImageTextToText.from_pretrained(MODEL_ID, {
+// The repo ships processor settings in processor_config.json and has NO
+// preprocessor_config.json, so AutoProcessor.from_pretrained (which fetches
+// preprocessor_config.json with fatal=true) 404s. Build the processor manually.
+async function buildProcessor(): Promise<any> {
+  const [procCfg, chatTemplate, tokenizer] = await Promise.all([
+    fetch(`${MODEL_BASE}/processor_config.json`).then((r) => r.json()),
+    fetch(`${MODEL_BASE}/chat_template.jinja`)
+      .then((r) => (r.ok ? r.text() : ''))
+      .catch(() => ''),
+    AutoTokenizer.from_pretrained(MODEL_ID, { progress_callback: onProgress }),
+  ]);
+  const imageProcessor = new Lfm2VlImageProcessor(procCfg.image_processor ?? procCfg);
+  const ProcessorCtor = Lfm2VlProcessor as any;
+  return new ProcessorCtor(
+    procCfg,
+    { image_processor: imageProcessor, tokenizer },
+    chatTemplate || undefined,
+  );
+}
+
+async function loadModel(plan: BackendPlan): Promise<any> {
+  return AutoModelForImageTextToText.from_pretrained(MODEL_ID, {
     dtype: plan.dtype as any,
     device: plan.device,
     progress_callback: onProgress,
   });
-  return { processor, model };
 }
 
 async function ensureLoaded(): Promise<LoadedModel> {
   if (loaded) return loaded;
   loadPromise ??= (async (): Promise<LoadedModel> => {
     post({ type: 'load-progress', stage: 'reading-cache', fraction: 0 });
+    const processor = await buildProcessor();
     let lastError: unknown = null;
     for (const plan of plans) {
       try {
-        const result = await loadWithPlan(plan);
+        const model = await loadModel(plan);
         activeBackend = plan.label;
         console.info(`[faturlens] inference backend: ${plan.label}`);
-        loaded = result;
-        return result;
+        loaded = { processor, model };
+        return loaded;
       } catch (error) {
         lastError = error;
         console.warn(`[faturlens] backend "${plan.label}" failed, trying next`, error);

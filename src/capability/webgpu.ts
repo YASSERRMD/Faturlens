@@ -51,11 +51,23 @@ function readLimits(adapter: GpuAdapterLike): WebGpuLimits {
   return result;
 }
 
+// Copy the fields into a plain object. The live GPUAdapterInfo is a host object
+// that cannot be structured-cloned (e.g. postMessage'd to the worker).
+function plainInfo(info: WebGpuAdapterInfo | undefined): WebGpuAdapterInfo {
+  if (!info) return {};
+  const result: WebGpuAdapterInfo = {};
+  if (typeof info.vendor === 'string') result.vendor = info.vendor;
+  if (typeof info.architecture === 'string') result.architecture = info.architecture;
+  if (typeof info.device === 'string') result.device = info.device;
+  if (typeof info.description === 'string') result.description = info.description;
+  return result;
+}
+
 async function readInfo(adapter: GpuAdapterLike): Promise<WebGpuAdapterInfo> {
-  if (adapter.info) return adapter.info;
+  if (adapter.info) return plainInfo(adapter.info);
   if (adapter.requestAdapterInfo) {
     try {
-      return await adapter.requestAdapterInfo();
+      return plainInfo(await adapter.requestAdapterInfo());
     } catch {
       return {};
     }
