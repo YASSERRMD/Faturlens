@@ -20,7 +20,10 @@ import { isMainToWorker, type MainToWorker, type WorkerToMain } from './protocol
 
 declare const self: DedicatedWorkerGlobalScope;
 
-const MODEL_ID = 'LiquidAI/LFM2.5-VL-1.6B-ONNX';
+// The onnx-community repo follows the Transformers.js file-name convention
+// (vision_encoder / decoder_model_merged / embed_tokens). The LiquidAI "-ONNX"
+// repo uses embed_images/decoder and is not loadable by the high-level loader.
+const MODEL_ID = 'onnx-community/LFM2-VL-1.6B-ONNX';
 const MODEL_BASE = `https://huggingface.co/${MODEL_ID}/resolve/main`;
 
 // Transformers.js manages model fetching + caching itself; allow remote models.

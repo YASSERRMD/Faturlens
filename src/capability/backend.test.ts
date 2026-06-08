@@ -14,17 +14,17 @@ const profile = (executionProvider: 'webgpu' | 'wasm'): DeviceProfile => ({
 });
 
 describe('selectBackend', () => {
-  it('uses WebGPU (fp16 vision + q4 decoder) with a WASM fallback when a GPU is present', () => {
+  it('uses WebGPU (fp16) with a WASM fallback when a GPU is present', () => {
     const sel = selectBackend(profile('webgpu'));
     expect(sel.primary.device).toBe('webgpu');
-    expect(sel.primary.dtype).toMatchObject({ vision_encoder: 'fp16', decoder_model_merged: 'q4' });
+    expect(sel.primary.dtype).toBe('fp16');
     expect(sel.fallback?.device).toBe('wasm');
   });
 
   it('uses WASM with no fallback when there is no GPU', () => {
     const sel = selectBackend(profile('wasm'));
     expect(sel.primary.device).toBe('wasm');
-    expect(sel.primary.dtype).toBe('q4');
+    expect(sel.primary.dtype).toBe('fp16');
     expect(sel.fallback).toBeNull();
   });
 });

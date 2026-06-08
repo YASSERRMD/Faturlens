@@ -23,26 +23,18 @@ export interface BackendSelection {
   fallback: BackendPlan | null;
 }
 
-// Recommended WebGPU combo per the model card: fp16 vision encoder + q4 decoder.
-const WEBGPU_DTYPE: DtypeRecipe = {
-  embed_tokens: 'fp16',
-  vision_encoder: 'fp16',
-  decoder_model_merged: 'q4',
-};
-
-// CPU/WASM: fp16 is poorly supported on WASM, so quantize everything.
-const WASM_DTYPE: DtypeRecipe = 'q4';
-
+// The onnx-community LFM2-VL repo ships fp32 (base) + fp16 variants only (no q4),
+// so we use fp16 across all sessions on both backends.
 const WEBGPU_PLAN: BackendPlan = {
   device: 'webgpu',
-  dtype: WEBGPU_DTYPE,
-  label: 'WebGPU · fp16 vision + q4 decoder',
+  dtype: 'fp16',
+  label: 'WebGPU · fp16',
 };
 
 const WASM_PLAN: BackendPlan = {
   device: 'wasm',
-  dtype: WASM_DTYPE,
-  label: 'WASM (CPU) · q4',
+  dtype: 'fp16',
+  label: 'WASM (CPU) · fp16',
 };
 
 /** Choose the inference backend (and a fallback) for the given device profile. */

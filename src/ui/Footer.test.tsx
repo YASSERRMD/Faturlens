@@ -8,7 +8,7 @@ describe('Footer', () => {
   it('shows version, model id, and prompt versions', () => {
     render(<Footer />);
     expect(screen.getByText(new RegExp(`v${APP_VERSION}`))).toBeInTheDocument();
-    expect(screen.getByText(/LFM2\.5-VL-1\.6B-ONNX/)).toBeInTheDocument();
+    expect(screen.getByText(/LFM2-VL-1\.6B-ONNX/)).toBeInTheDocument();
     expect(screen.getByText(/PASS1_PROMPT_V1/)).toBeInTheDocument();
   });
 });
