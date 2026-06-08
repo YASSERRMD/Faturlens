@@ -38,6 +38,28 @@
   color: inherit;
 }
 
+.demos {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+
+.demoChip {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--fl-border, #bbb);
+  background: var(--fl-surface-raised, #fff);
+  color: inherit;
+  cursor: pointer;
+}
+.demoChip:hover {
+  border-color: var(--fl-ok, #1a7f37);
+}
+
 .card {
   max-width: 36rem;
   margin: 1.5rem auto;

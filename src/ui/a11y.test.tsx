@@ -17,7 +17,7 @@ async function seriousViolations(container: HTMLElement): Promise<string[]> {
 describe('accessibility', () => {
   it('Welcome has no serious axe violations', async () => {
     const { container } = render(
-      <Welcome onUpload={() => undefined} onLoadDemos={() => undefined} />,
+      <Welcome onUpload={() => undefined} onOpenDemo={() => undefined} />,
     );
     expect(await seriousViolations(container)).toEqual([]);
   });

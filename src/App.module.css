@@ -4,6 +4,12 @@
   padding: 2rem 1.5rem;
 }
 
+.shellWide {
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+}
+
 .title {
   font-size: 2rem;
   font-weight: 700;
