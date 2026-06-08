@@ -20,7 +20,7 @@ export type MainToWorker =
 
 export type WorkerToMain =
   | { type: 'load-progress'; stage: LoadStage; fraction: number }
-  | { type: 'ready' }
+  | { type: 'ready'; backend?: string }
   | { type: 'token'; id: string; text: string }
   | { type: 'done'; id: string; fullText: string; stats: GenerationStats }
   | { type: 'error'; id?: string; message: string; recoverable: boolean };

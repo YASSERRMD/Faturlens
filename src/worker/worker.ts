@@ -12,13 +12,13 @@ import {
   RawImage,
   TextStreamer,
 } from '@huggingface/transformers';
+import { selectBackend, type BackendPlan } from '../capability/backend.ts';
 import type { DeviceProfile } from '../capability/profile.ts';
 import { isMainToWorker, type MainToWorker, type WorkerToMain } from './protocol.ts';
 
 declare const self: DedicatedWorkerGlobalScope;
 
 const MODEL_ID = 'LiquidAI/LFM2.5-VL-1.6B-ONNX';
-const DTYPE = { embed_tokens: 'fp16', vision_encoder: 'fp16', decoder_model_merged: 'q4' } as const;
 
 // Transformers.js manages model fetching + caching itself; allow remote models.
 env.allowLocalModels = false;
@@ -31,7 +31,8 @@ interface LoadedModel {
 
 let loaded: LoadedModel | null = null;
 let loadPromise: Promise<LoadedModel> | null = null;
-let device: 'webgpu' | 'wasm' = 'wasm';
+let plans: BackendPlan[] = [];
+let activeBackend: string | null = null;
 let activeId: string | null = null;
 let abortRequested = false;
 
@@ -48,35 +49,51 @@ function imageBitmapToRawImage(bitmap: ImageBitmap): RawImage {
   return new RawImage(new Uint8ClampedArray(data), width, height, 4).rgb();
 }
 
+function onProgress(p: any): void {
+  const progress: unknown = p?.progress;
+  if (typeof progress === 'number') {
+    post({ type: 'load-progress', stage: 'creating-sessions', fraction: progress / 100 });
+  }
+}
+
+async function loadWithPlan(plan: BackendPlan): Promise<LoadedModel> {
+  const processor = await AutoProcessor.from_pretrained(MODEL_ID, { progress_callback: onProgress });
+  const model = await AutoModelForImageTextToText.from_pretrained(MODEL_ID, {
+    dtype: plan.dtype as any,
+    device: plan.device,
+    progress_callback: onProgress,
+  });
+  return { processor, model };
+}
+
 async function ensureLoaded(): Promise<LoadedModel> {
   if (loaded) return loaded;
   loadPromise ??= (async (): Promise<LoadedModel> => {
     post({ type: 'load-progress', stage: 'reading-cache', fraction: 0 });
-    const onProgress = (p: any): void => {
-      const progress: unknown = p?.progress;
-      if (typeof progress === 'number') {
-        post({ type: 'load-progress', stage: 'creating-sessions', fraction: progress / 100 });
+    let lastError: unknown = null;
+    for (const plan of plans) {
+      try {
+        const result = await loadWithPlan(plan);
+        activeBackend = plan.label;
+        console.info(`[faturlens] inference backend: ${plan.label}`);
+        loaded = result;
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.warn(`[faturlens] backend "${plan.label}" failed, trying next`, error);
       }
-    };
-    const processor = await AutoProcessor.from_pretrained(MODEL_ID, {
-      progress_callback: onProgress,
-    });
-    const model = await AutoModelForImageTextToText.from_pretrained(MODEL_ID, {
-      dtype: DTYPE,
-      device,
-      progress_callback: onProgress,
-    });
-    loaded = { processor, model };
-    return loaded;
+    }
+    throw lastError instanceof Error ? lastError : new Error('No inference backend could be loaded');
   })();
   return loadPromise;
 }
 
 async function handleLoad(profile: DeviceProfile): Promise<void> {
-  device = profile.executionProvider === 'webgpu' ? 'webgpu' : 'wasm';
+  const selection = selectBackend(profile);
+  plans = [selection.primary, ...(selection.fallback ? [selection.fallback] : [])];
   await ensureLoaded();
   post({ type: 'load-progress', stage: 'warming-up', fraction: 1 });
-  post({ type: 'ready' });
+  post({ type: 'ready', ...(activeBackend ? { backend: activeBackend } : {}) });
 }
 
 async function handleInfer(message: Extract<MainToWorker, { type: 'infer' }>): Promise<void> {
